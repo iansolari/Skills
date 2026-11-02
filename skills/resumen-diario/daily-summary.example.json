@@ -1,0 +1,16 @@
+{
+  "timezone": "America/Argentina/Buenos_Aires",
+  "roots": ["~/dev"],
+  "max_depth": 4,
+  "authors": ["ian.solari@flockit.com.ar"],
+  "exclude_repos": [],
+  "topic_labels": {
+    "agora-backoffice": "Agora Backoffice",
+    "ppt-maker": "PPT Maker Flock",
+    "flock-marketing-ui": "Flock Marketing UI",
+    "ada-totem": "Ada Totem",
+    "agora-landing-candidates": "Agora Landing Candidatos",
+    "agora-landing-hr": "Agora Landing HR",
+    "agora-pitch": "Agora Pitch"
+  }
+}

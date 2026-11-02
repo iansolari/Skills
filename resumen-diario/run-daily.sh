@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cierre diario automático. Lo dispara cron/launchd. Genera el borrador en ~/.claude/daily-summaries/
+# Cierre diario automático. Lo dispara cron/launchd. El resumen queda en el log ~/.claude/daily-summaries/run.log (no se guardan .md)
 set -euo pipefail
 export PATH="$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
 LOG="$HOME/.claude/daily-summaries/run.log"; mkdir -p "$(dirname "$LOG")"
@@ -8,7 +8,7 @@ LOG="$HOME/.claude/daily-summaries/run.log"; mkdir -p "$(dirname "$LOG")"
 # Modelo configurable: SUMMARY_MODEL=haiku para el más barato (default: sonnet)
 claude -p "/resumen-diario" \
   --model "${SUMMARY_MODEL:-sonnet}" \
-  --allowedTools "Bash(node:*) Bash(git:*) Read Write" \
+  --allowedTools "Bash(node:*) Bash(git:*) Read" \
   >> "$LOG" 2>&1
 # Aviso (macOS) cuando está listo
-command -v osascript >/dev/null && osascript -e 'display notification "Borrador listo en ~/.claude/daily-summaries" with title "Resumen diario"' || true
+command -v osascript >/dev/null && osascript -e 'display notification "Resumen listo en ~/.claude/daily-summaries/run.log" with title "Resumen diario"' || true

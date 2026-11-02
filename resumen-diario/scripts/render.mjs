@@ -1,7 +1,11 @@
 #!/usr/bin/env node
-// Toma tasks.json (con 'weight' relativo por tarea) y reparte el tiempo para que
-// sume exactamente el total (default 7h), en bloques de 15 min. Escribe .md y .json final.
+// Toma las tareas (JSON con 'weight' relativo por tarea) y reparte el tiempo para que
+// sume exactamente el total (default 7h), en bloques de 15 min. Imprime el resultado
+// por stdout; no escribe archivos salvo que se pida con --save DIR.
 // Solo requiere Node >= 18 (sin dependencias).
+//
+// Uso: node render.mjs [tasks.json | -] [--hours 7] [--save DIR]
+//   Sin archivo (o con "-") lee el JSON desde stdin.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -34,15 +38,15 @@ function fmt(m) {
 }
 
 const argv = process.argv.slice(2);
-let tasksJson = null, hours = 7, outdir = "~/.claude/daily-summaries";
+let tasksJson = null, hours = 7, saveDir = null;
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--hours") hours = parseFloat(argv[++i]);
-  else if (argv[i] === "--outdir") outdir = argv[++i];
+  else if (argv[i] === "--save") saveDir = argv[++i];
   else tasksJson = argv[i];
 }
-if (!tasksJson) { console.error("Uso: render.mjs tasks.json [--hours 7] [--outdir DIR]"); process.exit(2); }
 
-const data = JSON.parse(fs.readFileSync(tasksJson, "utf8").replace(/^﻿/, ""));
+const raw = tasksJson && tasksJson !== "-" ? fs.readFileSync(expand(tasksJson), "utf8") : fs.readFileSync(0, "utf8");
+const data = JSON.parse(raw.replace(/^﻿/, ""));
 const tasks = data.tasks;
 const mins = distribute(tasks.map((t) => parseFloat(t.weight ?? 1)), Math.floor(hours * 60));
 tasks.forEach((t, i) => {
@@ -50,10 +54,14 @@ tasks.forEach((t, i) => {
   t.time = fmt(mins[i]);
   t.title = `${t.summary} - ${t.topic}`;
 });
-const out = expand(outdir);
-fs.mkdirSync(out, { recursive: true });
-fs.writeFileSync(path.join(out, `${data.date}.json`), JSON.stringify(data, null, 2));
+
 const md = [`# Resumen del ${data.date} — total ${fmt(mins.reduce((s, m) => s + m, 0))}\n`];
 for (const t of tasks) md.push(`## ${t.title}\n**Tiempo:** ${t.time}\n\n${t.description.trim()}\n`);
-fs.writeFileSync(path.join(out, `${data.date}.md`), md.join("\n"));
 console.log(md.join("\n"));
+
+if (saveDir) {
+  const out = path.resolve(expand(saveDir));
+  fs.mkdirSync(out, { recursive: true });
+  fs.writeFileSync(path.join(out, `${data.date}.json`), JSON.stringify(data, null, 2));
+  fs.writeFileSync(path.join(out, `${data.date}.md`), md.join("\n"));
+}

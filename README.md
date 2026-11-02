@@ -1,18 +1,21 @@
-# skills
+# Skills
 
-Mis skills personales para Claude Code. Cada carpeta en `skills/` es una skill (con su `SKILL.md`).
+Skills propias para Claude Code, de distintos temas y usos (no solo de mi forma de trabajo). Cada carpeta de primer nivel con un `SKILL.md` es una skill independiente.
 
 ## Instalar / actualizar
 ```bash
-git clone git@github.com:iansolari/skills.git ~/dev/skills
-~/dev/skills/install.sh      # enlaza todas las skills en ~/.claude/skills
-git -C ~/dev/skills pull     # actualizar (los enlaces ya apuntan al repo)
+git clone git@github.com:iansolari/skills.git ~/dev/Skills
+~/dev/Skills/install.sh                # enlaza todas las skills en ~/.claude/skills
+~/dev/Skills/install.sh <skill> ...    # o solo algunas
+~/dev/Skills/install.sh --list         # ver las disponibles
+git -C ~/dev/Skills pull               # actualizar (los enlaces ya apuntan al repo)
 ```
+En Windows corré el instalador desde Git Bash: crea junctions, no copias.
 
 ## Skills
 | Skill | Qué hace | Setup extra |
 |---|---|---|
-| `resumen-diario` | Cierre del día: resumen de tareas de todos los repos/sesiones para flocklabs.ar/backoffice, tiempo repartido a 7h | `skills/resumen-diario/setup.sh` |
+| `resumen-diario` | Cierre del día: resumen de tareas de todos los repos/sesiones para flocklabs.ar/backoffice, tiempo repartido a 7h | `resumen-diario/setup.sh` |
 
 ## Agregar una skill nueva
-Crear `skills/<nombre>/SKILL.md` (con `name` y `description` en el frontmatter) y correr `./install.sh`.
+Crear `<nombre>/SKILL.md` (con `name` y `description` en el frontmatter), sumarla a la tabla y correr `./install.sh`. Si necesita configuración propia, va en `<nombre>/setup.sh`: el instalador la avisa pero nunca la ejecuta.

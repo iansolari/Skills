@@ -12,9 +12,9 @@ Genera las tareas del día para el backoffice de Flock Labs. Por defecto es **ho
 
 1. **Recolectar** (determinístico, no inventar nada que no esté acá):
    ```bash
-   python3 ~/.claude/skills/resumen-diario/scripts/collect.py [--date YYYY-MM-DD] > /tmp/actividad.json
+   node ~/.claude/skills/resumen-diario/scripts/collect.mjs [--date YYYY-MM-DD] --out ~/.claude/daily-summaries/.work/actividad.json
    ```
-   Lee `~/.claude/daily-summary.json` (roots, autores, labels, exclusiones). Devuelve por repo: commits del día (todas las ramas, sin merges), archivos tocados, cambios sin commitear; y por sesión de Claude Code: prompts del usuario y horario.
+   Requiere solo Node >= 18 y git. Lee `~/.claude/daily-summary.json` (roots, autores, labels, exclusiones) y escribe el JSON en `--out` (imprime cuántos repos y sesiones encontró; después leer ese archivo). Contiene por repo: commits del día (todas las ramas, sin merges), archivos tocados, cambios sin commitear; y por sesión de Claude Code: prompts del usuario y horario.
    Si `repos` y `sessions` vienen vacíos, decirlo y no inventar tareas.
 
 2. **Entender el trabajo**: cruzar commits con los prompts de las sesiones del mismo proyecto/cwd. Los prompts explican el *para qué*; los commits, el *qué*. Si algo es ambiguo, mirar el diff con `git -C <repo> show <sha> --stat` o `git diff`, pero no hace falta ser exhaustivo.
@@ -31,18 +31,18 @@ Genera las tareas del día para el backoffice de Flock Labs. Por defecto es **ho
    - `description`: detalle de lo realizado, **no 100% técnico y no muy extenso**: hasta dos párrafos, o viñetas/enumeración. Hablar del **trabajo en sí** (qué se resolvió/construyó/mejoró y para qué), **nunca** de commits, PRs, merges, ramas ni hashes. Tono neutro, en español, en pasado.
    - `weight`: número relativo de esfuerzo (el que más tiempo llevó o fue más costoso pesa más). No son horas reales.
 
-5. **Escribir `tasks.json`** y renderizar. El script reparte exactamente 7h (420 min) en bloques de 15 min según los pesos:
+5. **Escribir `tasks.json`** (en `~/.claude/daily-summaries/.work/tasks.json`) y renderizar. El script reparte exactamente 7h (420 min) en bloques de 15 min según los pesos:
    ```json
    {"date": "2026-11-02", "tasks": [
      {"summary": "...", "topic": "...", "description": "...", "weight": 5}
    ]}
    ```
    ```bash
-   python3 ~/.claude/skills/resumen-diario/scripts/render.py /tmp/tasks.json
+   node ~/.claude/skills/resumen-diario/scripts/render.mjs ~/.claude/daily-summaries/.work/tasks.json
    ```
    Guarda `~/.claude/daily-summaries/<fecha>.md` y `.json`.
 
-6. **Presentar** el resultado al usuario tal cual lo imprime `render.py` (título, tiempo, descripción por tarea). No reescribir los tiempos a mano: sumar siempre 7h.
+6. **Presentar** el resultado al usuario tal cual lo imprime `render.mjs` (título, tiempo, descripción por tarea). No reescribir los tiempos a mano: sumar siempre 7h.
 
 ## Formato de salida por tarea
 

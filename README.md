@@ -15,7 +15,7 @@ En Windows corré el instalador desde Git Bash: crea junctions, no copias.
 ## Skills
 | Skill | Qué hace | Setup extra |
 |---|---|---|
-| `resumen-diario` | Cierre del día: resumen de tareas de todos los repos/sesiones para flocklabs.ar/backoffice, tiempo repartido a 7h | `resumen-diario/setup.sh` |
+| `resumen-diario` | Cierre del día: resumen de tareas de todos los repos/sesiones para flocklabs.ar/backoffice, tiempo repartido a 7h | `resumen-diario/setup.sh` (requiere Node ≥ 18 y git) |
 
 ## Agregar una skill nueva
 Crear `<nombre>/SKILL.md` (con `name` y `description` en el frontmatter), sumarla a la tabla y correr `./install.sh`. Si necesita configuración propia, va en `<nombre>/setup.sh`: el instalador la avisa pero nunca la ejecuta.

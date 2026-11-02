@@ -8,7 +8,7 @@ LOG="$HOME/.claude/daily-summaries/run.log"; mkdir -p "$(dirname "$LOG")"
 # Modelo configurable: SUMMARY_MODEL=haiku para el más barato (default: sonnet)
 claude -p "/resumen-diario" \
   --model "${SUMMARY_MODEL:-sonnet}" \
-  --allowedTools "Bash(python3:*) Bash(git:*) Read Write" \
+  --allowedTools "Bash(node:*) Bash(git:*) Read Write" \
   >> "$LOG" 2>&1
 # Aviso (macOS) cuando está listo
 command -v osascript >/dev/null && osascript -e 'display notification "Borrador listo en ~/.claude/daily-summaries" with title "Resumen diario"' || true

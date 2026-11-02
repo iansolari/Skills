@@ -1,6 +1,6 @@
 # Skills
 
-Skills propias para Claude Code, de distintos temas y usos (no solo de mi forma de trabajo). Cada carpeta de primer nivel con un `SKILL.md` es una skill independiente.
+Skills propias para Claude Code, de distintos temas y usos. Cada carpeta de primer nivel con un `SKILL.md` es una skill independiente.
 
 ## Instalar / actualizar
 ```bash

@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
-# Enlaza cada skill del repo (carpeta de primer nivel con SKILL.md) en ~/.claude/skills.
+# Enlaza cada skill del repo (carpeta de primer nivel con SKILL.md) en ~/.claude/skills
+# (Claude Code) o en ~/.codex/skills (Codex, con --codex).
 # Con `git pull` las skills se actualizan solas porque los enlaces apuntan al repo.
 #
 # Uso:
-#   ./install.sh                 instala todas las skills
+#   ./install.sh                 instala todas las skills en Claude Code
 #   ./install.sh a b             instala solo las skills a y b
+#   ./install.sh --codex [a b]   lo mismo, pero en Codex
 #   ./install.sh --list          lista las skills disponibles
 #
 # En Windows (Git Bash) usa junctions: `ln -s` copiaría la carpeta en silencio.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DEST="$HOME/.claude/skills"
+
+args=()
+for a in "$@"; do
+  if [ "$a" = "--codex" ]; then DEST="$HOME/.codex/skills"; else args+=("$a"); fi
+done
+set -- ${args[@]+"${args[@]}"}
 
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WIN=1 ;; *) WIN=0 ;; esac
 

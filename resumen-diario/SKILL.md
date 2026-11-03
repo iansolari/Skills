@@ -14,7 +14,7 @@ Genera las tareas del día para el backoffice de Flock Labs. Por defecto es **ho
    ```bash
    node ~/.claude/skills/resumen-diario/scripts/collect.mjs [--date YYYY-MM-DD]
    ```
-   Requiere solo Node >= 18 y git. Lee `~/.claude/daily-summary.json` (roots, autores, labels, exclusiones) e imprime el JSON por stdout, sin crear archivos. Contiene por repo: commits del día (todas las ramas, sin merges), archivos tocados, cambios sin commitear; y por sesión de Claude Code: prompts del usuario y horario.
+   La ruta de la skill es `~/.claude/skills/resumen-diario` en Claude Code y `~/.codex/skills/resumen-diario` en Codex: usar la que exista. Requiere solo Node >= 18 y git. Lee `~/.claude/daily-summary.json` (roots, autores, labels, exclusiones) e imprime el JSON por stdout, sin crear archivos. Contiene por repo: commits del día (todas las ramas, sin merges), archivos tocados, cambios sin commitear; y por sesión de Claude Code **y de Codex** (campo `tool`): prompts del usuario y horario. Las sesiones de Codex se leen de `~/.codex/sessions` (se ignoran los subagentes "guardian"); los directorios se pueden cambiar o desactivar con `claude_projects_dir` y `codex_sessions_dir` en la config.
    Si `repos` y `sessions` vienen vacíos, decirlo y no inventar tareas.
 
 2. **Entender el trabajo**: cruzar commits con los prompts de las sesiones del mismo proyecto/cwd. Los prompts explican el *para qué*; los commits, el *qué*. Si algo es ambiguo, mirar el diff con `git -C <repo> show <sha> --stat` o `git diff`, pero no hace falta ser exhaustivo.

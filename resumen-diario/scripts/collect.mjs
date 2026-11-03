@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Recolecta la actividad de un día en todos los repos bajo uno o más roots
-// y en los transcripts de sesiones de Claude Code. Imprime JSON a stdout.
+// y en los transcripts de sesiones de Claude Code y de Codex. Imprime JSON a stdout.
 // Solo requiere Node >= 18 y git (sin dependencias).
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import readline from "node:readline";
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "venv", ".venv", "dist", "build", ".next", "__pycache__", "Library", ".cache"]);
 
@@ -115,56 +116,143 @@ function repoActivity(repo, start, end, authors, includeWip) {
   return { commits, wip: wip.map((l) => l.slice(3)).slice(0, 20), branch };
 }
 
-// --- sesiones de Claude Code ---
+// --- sesiones (Claude Code y Codex) ---
 function textOf(content) {
   if (typeof content === "string") return content;
-  if (Array.isArray(content)) return content.filter((b) => b && b.type === "text").map((b) => b.text || "").join("\n");
+  if (Array.isArray(content)) {
+    return content.filter((b) => b && (b.type === "text" || b.type === "input_text")).map((b) => b.text || "").join("\n");
+  }
   return "";
 }
 
-function sessionActivity(projectsDir, start, end, tz) {
-  const base = expand(projectsDir);
-  if (!fs.existsSync(base)) return [];
-  const res = [];
-  for (const proj of fs.readdirSync(base, { withFileTypes: true })) {
-    if (!proj.isDirectory()) continue;
-    const pdir = path.join(base, proj.name);
-    for (const fname of fs.readdirSync(pdir)) {
-      if (!fname.endsWith(".jsonl")) continue;
-      const f = path.join(pdir, fname);
-      try {
-        if (fs.statSync(f).mtime < start) continue;
-      } catch {
-        continue;
+// Codex envuelve algunos mensajes (comentarios del navegador, archivos adjuntos) en bloques
+// automáticos; el texto del usuario está en "Comment:" y debajo de "## My request:".
+function unwrapCodex(txt) {
+  if (!/^# (Browser comments|Files mentioned by the user|In app browser)/.test(txt)) return txt;
+  const parts = [];
+  for (const m of txt.matchAll(/^Comment:\n([\s\S]*?)(?=\n\n|\n<|\n## |$)/gm)) parts.push(m[1].trim());
+  const req = txt.split(/^## My request(?: for Codex)?:?[ \t]*$/m)[1];
+  if (req) {
+    parts.push(req.split("\n").filter((l) => !/^The next images? (is|are) untrusted/.test(l.trim())).join("\n").trim());
+  }
+  return parts.filter(Boolean).join(" — ");
+}
+
+// Un mensaje del usuario "real": no el contexto que inyectan las herramientas.
+function realPrompt(raw) {
+  const txt = unwrapCodex((raw || "").trim()).replace(/<\/?image\b[^>]*>/g, "").replace(/[ \t]{2,}/g, " ").trim();
+  if (!txt || txt.startsWith("<") || txt.startsWith("Caveat:") || txt.startsWith("# AGENTS.md")) return null;
+  return txt.slice(0, 300);
+}
+
+// Lee un .jsonl línea a línea (los hilos de Codex pueden pesar cientos de MB).
+async function* readLines(file) {
+  const input = fs.createReadStream(file, { encoding: "utf8" });
+  const rl = readline.createInterface({ input, crlfDelay: Infinity });
+  try {
+    for await (const line of rl) yield line;
+  } finally {
+    rl.close();
+    input.destroy();
+  }
+}
+
+function walk(dir, match, out = []) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const e of entries) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walk(p, match, out);
+    else if (match(e.name)) out.push(p);
+  }
+  return out;
+}
+
+const modifiedSince = (f, start) => {
+  try {
+    return fs.statSync(f).mtime >= start;
+  } catch {
+    return false;
+  }
+};
+
+async function scanSession(file, tool, start, end, tz) {
+  const prompts = [];
+  let cwd = null, first = null, last = null, n = 0;
+  // Para descartar rápido, sin parsear, las líneas de Codex de otros días.
+  const days = new Set([start.toISOString().slice(0, 10), new Date(end - 1).toISOString().slice(0, 10)]);
+  for await (const line of readLines(file)) {
+    if (!line) continue;
+    n++;
+    if (tool === "codex" && n > 1 && line.startsWith('{"timestamp":"') && !days.has(line.slice(14, 24))) continue;
+    let e;
+    try {
+      e = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (tool === "codex" && n === 1) {
+      const m = e.payload || {};
+      // Los hilos "guardian" (revisor de aprobaciones) y otros subagentes no son conversaciones tuyas.
+      if (e.type !== "session_meta" || m.source?.subagent || (m.thread_source && m.thread_source !== "user")) return null;
+      cwd = m.cwd || null;
+      continue;
+    }
+    if (!e.timestamp) continue;
+    const t = new Date(e.timestamp);
+    if (!(t >= start && t < end)) continue;
+    first = first || t;
+    last = t;
+    if (tool === "claude") {
+      cwd = e.cwd || cwd;
+      if (e.type === "user" && !e.isSidechain && !e.isMeta) {
+        const p = realPrompt(textOf(e.message?.content));
+        if (p) prompts.push(p);
       }
-      const prompts = [];
-      let cwd = null, first = null, last = null;
-      for (const line of fs.readFileSync(f, "utf8").split("\n")) {
-        if (!line) continue;
-        let e;
-        try {
-          e = JSON.parse(line);
-        } catch {
-          continue;
-        }
-        if (!e.timestamp) continue;
-        const t = new Date(e.timestamp);
-        if (!(t >= start && t < end)) continue;
-        cwd = e.cwd || cwd;
-        first = first || t;
-        last = t;
-        if (e.type === "user" && !e.isSidechain && !e.isMeta) {
-          const txt = textOf(e.message?.content).trim();
-          if (txt && !txt.startsWith("<") && !txt.startsWith("Caveat:")) prompts.push(txt.slice(0, 300));
-        }
-      }
-      if (prompts.length) {
-        res.push({ session: fname.replace(/\.jsonl$/, ""), project: proj.name, cwd,
-          first: isoLocal(first, tz), last: isoLocal(last, tz),
-          active_minutes_span: Math.floor((last - first) / 60000),
-          n_prompts: prompts.length, prompts: prompts.slice(0, 12), _t: first.getTime() });
+    } else {
+      if (e.type === "turn_context" && e.payload?.cwd) cwd = e.payload.cwd;
+      if (e.type === "response_item" && e.payload?.type === "message" && e.payload?.role === "user") {
+        const p = realPrompt(textOf(e.payload.content));
+        if (p) prompts.push(p);
       }
     }
+  }
+  if (!prompts.length) return null;
+  return { session: path.basename(file).replace(/\.jsonl$/, ""), tool, project: path.basename(cwd || path.dirname(file)), cwd,
+    first: isoLocal(first, tz), last: isoLocal(last, tz),
+    active_minutes_span: Math.floor((last - first) / 60000),
+    n_prompts: prompts.length, prompts: prompts.slice(0, 12), _t: first.getTime() };
+}
+
+async function sessionActivity({ claudeDir, codexDir }, start, end, tz) {
+  const jobs = [];
+  if (claudeDir) {
+    const base = expand(claudeDir);
+    if (fs.existsSync(base)) {
+      for (const proj of fs.readdirSync(base, { withFileTypes: true })) {
+        if (!proj.isDirectory()) continue;
+        const pdir = path.join(base, proj.name);
+        for (const f of fs.readdirSync(pdir)) {
+          if (f.endsWith(".jsonl") && modifiedSince(path.join(pdir, f), start)) jobs.push([path.join(pdir, f), "claude"]);
+        }
+      }
+    }
+  }
+  if (codexDir) {
+    const base = expand(codexDir);
+    // Un hilo de Codex vive en la carpeta del día en que empezó y puede seguir días después.
+    for (const f of walk(base, (n) => n.startsWith("rollout-") && n.endsWith(".jsonl"))) {
+      if (modifiedSince(f, start)) jobs.push([f, "codex"]);
+    }
+  }
+  const res = [];
+  for (const [f, tool] of jobs) {
+    const s = await scanSession(f, tool, start, end, tz);
+    if (s) res.push(s);
   }
   return res.sort((a, b) => a._t - b._t).map(({ _t, ...s }) => s);
 }
@@ -219,10 +307,15 @@ for (const repo of findRepos(roots, cfg.max_depth ?? 4)) {
   }
 }
 
+// Directorios de sesiones: se pueden cambiar o desactivar (null) desde la config.
+const dirOf = (key, fallback) => (key in cfg ? cfg[key] : fallback);
 const out = {
   date: `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
   timezone: tzName, authors, repos,
-  sessions: sessionActivity(cfg.claude_projects_dir || "~/.claude/projects", start, end, tzName),
+  sessions: await sessionActivity({
+    claudeDir: dirOf("claude_projects_dir", "~/.claude/projects"),
+    codexDir: dirOf("codex_sessions_dir", "~/.codex/sessions"),
+  }, start, end, tzName),
 };
 const json = JSON.stringify(out, null, 2) + "\n";
 if (a.out) {

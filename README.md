@@ -8,6 +8,7 @@ git clone git@github.com:iansolari/skills.git ~/dev/Skills
 ~/dev/Skills/install.sh                # enlaza todas las skills en ~/.claude/skills
 ~/dev/Skills/install.sh <skill> ...    # o solo algunas
 ~/dev/Skills/install.sh --list         # ver las disponibles
+~/dev/Skills/install.sh --codex        # lo mismo para Codex (~/.codex/skills)
 git -C ~/dev/Skills pull               # actualizar (los enlaces ya apuntan al repo)
 ```
 En Windows corré el instalador desde Git Bash: crea junctions, no copias.
@@ -15,7 +16,7 @@ En Windows corré el instalador desde Git Bash: crea junctions, no copias.
 ## Skills
 | Skill | Qué hace | Setup extra |
 |---|---|---|
-| `resumen-diario` | Cierre del día: resumen de tareas de todos los repos/sesiones para flocklabs.ar/backoffice, tiempo repartido a 7h | `resumen-diario/setup.sh` (requiere Node ≥ 18 y git) |
+| `resumen-diario` | Cierre del día: resumen de tareas de todos los repos/sesiones para flocklabs.ar/backoffice, tiempo repartido a 7h | `resumen-diario/setup.sh` (requiere Node ≥ 18 y git; lee sesiones de Claude Code y de Codex) |
 | `orquestar` | Modo orquestador: la sesión principal planifica y reparte lectura, búsqueda, ejecución y verificación en subagentes baratos | Requiere los agentes `explorador`, `verificador`, `mecanico`, `ejecutor` y `navegador` en `~/.claude/agents/` (no están en este repo) |
 
 ## Agregar una skill nueva

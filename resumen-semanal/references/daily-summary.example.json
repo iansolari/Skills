@@ -1,0 +1,7 @@
+{
+  "roots": ["~/dev", "~/Desktop/Repositorios"],
+  "max_depth": 4,
+  "authors": [],
+  "exclude_repos": [],
+  "topic_labels": {}
+}

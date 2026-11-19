@@ -1,6 +1,6 @@
 # Skills
 
-Skills propias para Claude Code, de distintos temas y usos. Cada carpeta de primer nivel con un `SKILL.md` es una skill independiente.
+Skills propias para Claude Code y Codex. Cada carpeta de primer nivel con un `SKILL.md` es una skill independiente.
 
 ## Instalar / actualizar
 ```bash
@@ -17,6 +17,7 @@ En Windows corré el instalador desde Git Bash: crea junctions, no copias.
 | Skill | Qué hace | Setup extra |
 |---|---|---|
 | `resumen-diario` | Cierre del día: resumen de tareas de todos los repos/sesiones para flocklabs.ar/backoffice, tiempo repartido a 7h | `resumen-diario/setup.sh` (requiere Node ≥ 18 y git; lee sesiones de Claude Code y de Codex) |
+| [`resumen-semanal`](resumen-semanal/) | Presentación editable en Codex Spaces de 8 a 10 diapositivas con avances por proyecto y capturas | Instalá con `./install.sh --codex resumen-semanal`. Requiere Node ≥ 18 y Git para recolectar actividad. [Ver plantillas](resumen-semanal/assets/previews/plantillas.png) |
 | `orquestar` | Modo orquestador: la sesión principal planifica y reparte lectura, búsqueda, ejecución y verificación en subagentes baratos | Requiere los agentes `explorador`, `verificador`, `mecanico`, `ejecutor` y `navegador` en `~/.claude/agents/` (no están en este repo) |
 
 ## Agregar una skill nueva
